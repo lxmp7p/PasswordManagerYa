@@ -1,15 +1,21 @@
 package handler
 
-import "github.com/go-chi/chi/v5"
+import (
+	"passwordmanager/internal/service"
+
+	"github.com/go-chi/chi/v5"
+)
 
 type Handler struct {
 	auth *AuthHandler
 }
 
-func NewHandler() *Handler {
-	return &Handler{}
+func NewHandler(authService service.AuthServiceInterface) *Handler {
+	return &Handler{
+		auth: NewAuthHandler(authService),
+	}
 }
 
-func (h *Handler) InitHandler(r chi.Router) {
+func (h *Handler) InitRoutes(r chi.Router) {
 	h.auth.InitRoutes(r)
 }
