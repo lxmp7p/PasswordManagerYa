@@ -11,3 +11,7 @@ type TokenManagerInterface interface {
 	Generate(userId int64, login string) (string, error)
 	Parse(token string) (*Claims, error)
 }
+
+type VaultServiceInterface interface {
+	Create(ctx context.Context, userID int64, item VaultCreate) error
+}

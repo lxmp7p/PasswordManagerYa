@@ -46,7 +46,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := h.authService.Login(context.Background(), req.Login, req.Password)
 	if err != nil {
-		http.Error(w, "failed to validate request data", http.StatusBadRequest)
+		http.Error(w, "failed to login", http.StatusBadRequest)
 		return
 	}
 

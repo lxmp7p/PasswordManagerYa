@@ -42,7 +42,7 @@ func JWT(manager service.TokenManagerInterface) func(http.Handler) http.Handler 
 	}
 }
 
-func UserIDFromContext(ctx context.Context) (string, bool) {
-	userID, ok := ctx.Value(UserIDKey).(string)
+func UserIDFromContext(ctx context.Context) (int64, bool) {
+	userID, ok := ctx.Value(UserIDKey).(int64)
 	return userID, ok
 }

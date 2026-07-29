@@ -14,6 +14,8 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+var secretToken = "MEGASECRETKEY"
+
 func main() {
 	r := chi.NewRouter()
 
@@ -31,9 +33,13 @@ func main() {
 	}
 
 	userRepository := repository.NewUserRepository(db.Pool)
-	tokenService := service.NewTokenService("MEGASECRETKEY")
+	vaultRepository := repository.NewVaultRepository(db.Pool)
+
+	tokenService := service.NewTokenService(secretToken)
 	authService := service.NewAuthService(logger, userRepository, tokenService)
-	h := handler.NewHandler(authService)
+	vaultService := service.NewVaultService(logger, vaultRepository)
+
+	h := handler.NewHandler(authService, vaultService, tokenService)
 
 	h.InitRoutes(r)
 
@@ -44,4 +50,3 @@ func main() {
 
 	log.Fatal(server.ListenAndServeTLS("server.crt", "server.key"))
 }
-

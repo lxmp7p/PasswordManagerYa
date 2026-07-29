@@ -7,15 +7,21 @@ import (
 )
 
 type Handler struct {
-	auth *AuthHandler
+	auth  *AuthHandler
+	vault *VaultHandler
 }
 
-func NewHandler(authService service.AuthServiceInterface) *Handler {
+func NewHandler(
+	authService service.AuthServiceInterface,
+	vaultService service.VaultServiceInterface,
+	tokenService service.TokenManagerInterface) *Handler {
 	return &Handler{
-		auth: NewAuthHandler(authService),
+		auth:  NewAuthHandler(authService),
+		vault: NewVaultHandler(vaultService, tokenService),
 	}
 }
 
 func (h *Handler) InitRoutes(r chi.Router) {
 	h.auth.InitRoutes(r)
+	h.vault.InitRoutes(r)
 }
