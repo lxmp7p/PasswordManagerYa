@@ -9,5 +9,5 @@ type AuthServiceInterface interface {
 
 type TokenManagerInterface interface {
 	Generate(userId int64, login string) (string, error)
-	//Parse(token string) (*Claims, error)
+	Parse(token string) (*Claims, error)
 }
