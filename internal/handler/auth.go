@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"passwordmanager/internal/service"
@@ -17,6 +18,10 @@ type RegisterRequest struct {
 	Password string `json:"password"`
 }
 
+type LoginResponse struct {
+	Token string `json:"token"`
+}
+
 func NewAuthHandler(authService service.AuthServiceInterface) *AuthHandler {
 	return &AuthHandler{
 		authService: authService,
@@ -31,6 +36,25 @@ func (h *AuthHandler) InitRoutes(r chi.Router) {
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+	var req RegisterRequest
+
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, "failed to validate request data", http.StatusBadRequest)
+		return
+	}
+
+	resp, err := h.authService.Login(context.Background(), req.Login, req.Password)
+	if err != nil {
+		http.Error(w, "failed to validate request data", http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	json.NewEncoder(w).Encode(LoginResponse{
+		Token: resp,
+	})
 
 }
 
@@ -39,11 +63,16 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		http.Error(w, "failed to validete request data", http.StatusBadRequest)
+		http.Error(w, "failed to validate request data", http.StatusBadRequest)
 		return
 	}
 
-	h.authService.Register(r.Context(), req.Login, req.Password)
+	err = h.authService.Register(r.Context(), req.Login, req.Password)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	w.WriteHeader(http.StatusCreated)
 }

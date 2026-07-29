@@ -31,7 +31,8 @@ func main() {
 	}
 
 	userRepository := repository.NewUserRepository(db.Pool)
-	authService := service.NewAuthService(userRepository)
+	tokenService := service.NewTokenService("MEGASECRETKEY")
+	authService := service.NewAuthService(logger, userRepository, tokenService)
 	h := handler.NewHandler(authService)
 
 	h.InitRoutes(r)
@@ -43,3 +44,4 @@ func main() {
 
 	log.Fatal(server.ListenAndServeTLS("server.crt", "server.key"))
 }
+
