@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log/slog"
+	"passwordmanager/internal/dto"
 	"passwordmanager/internal/model"
 	"passwordmanager/internal/repository"
 )
@@ -48,40 +49,42 @@ type TextData struct {
 	Text string `json:"text"`
 }
 
-func (vi *VaultService) Create(ctx context.Context, userID int64, item VaultCreate) error {
+func (vi *VaultService) Create(ctx context.Context, userID int64, item VaultCreate) (int64, error) {
 	switch item.Type {
 	case model.ItemLogin:
 		var data LoginPasswordData
 		err := json.Unmarshal(item.Data, &data)
 		if err != nil {
-			return err
+			return 0, err
 		}
 
 		if err := data.validate(); err != nil {
-			return err
+			return 0, err
 		}
 
 	case model.ItemBankCard:
 		var data BankCardData
 		err := json.Unmarshal(item.Data, &data)
 		if err != nil {
-			return err
+			return 0, err
 		}
 
 		if err := data.validate(); err != nil {
-			return err
+			return 0, err
 		}
 
 	case model.ItemText:
 		var data TextData
 		err := json.Unmarshal(item.Data, &data)
 		if err != nil {
-			return err
+			return 0, err
 		}
 
 		if err := data.validate(); err != nil {
-			return err
+			return 0, err
 		}
+	default:
+		return 0, errors.New("unknown vault item type")
 	}
 
 	vaultItem := model.VaultItem{
@@ -91,9 +94,15 @@ func (vi *VaultService) Create(ctx context.Context, userID int64, item VaultCrea
 		SecretData: item.Data,
 	}
 
-	vi.vaultRepo.Create(ctx, vaultItem)
+	newItemId, err := vi.vaultRepo.Create(ctx, vaultItem)
 
-	return nil
+	if err != nil {
+		return 0, err
+	}
+
+	err = vi.vaultRepo.CreateMetadata(ctx, newItemId, item.Metadata)
+
+	return newItemId, nil
 }
 
 func (lp *LoginPasswordData) validate() error {
@@ -115,4 +124,55 @@ func (td *TextData) validate() error {
 		return errors.New("text are required")
 	}
 	return nil
+}
+
+func (vi *VaultService) Get(ctx context.Context, itemID, userID int64) (dto.VaultResponseGet, error) {
+	vault, err := vi.vaultRepo.GetByID(ctx, itemID, userID)
+	if err != nil {
+		return dto.VaultResponseGet{}, err
+	}
+
+	metadata, err := vi.vaultRepo.GetMetadata(ctx, itemID)
+	if err != nil {
+		return dto.VaultResponseGet{}, err
+	}
+
+	result := dto.VaultResponseGet{
+		ID:        vault.ID,
+		Type:      string(vault.Type),
+		Title:     vault.Title,
+		Data:      vault.SecretData,
+		Metadata:  metadata,
+		CreatedAt: vault.CreatedAt,
+		UpdatedAt: vault.UpdatedAt,
+	}
+
+	return result, nil
+}
+
+func (vi *VaultService) List(ctx context.Context, userID int64) ([]dto.VaultResponseGet, error) {
+	vaults, err := vi.vaultRepo.List(ctx, userID)
+	if err != nil {
+		return []dto.VaultResponseGet{}, err
+	}
+
+	var result []dto.VaultResponseGet
+
+	for _, vault := range vaults {
+		metadata, err := vi.vaultRepo.GetMetadata(ctx, vault.ID)
+		if err != nil {
+			return []dto.VaultResponseGet{}, err
+		}
+		result = append(result, dto.VaultResponseGet{
+			ID:        vault.ID,
+			Type:      string(vault.Type),
+			Title:     vault.Title,
+			Data:      vault.SecretData,
+			Metadata:  metadata,
+			CreatedAt: vault.CreatedAt,
+			UpdatedAt: vault.UpdatedAt,
+		})
+	}
+
+	return result, nil
 }
