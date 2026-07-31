@@ -49,6 +49,11 @@ type TextData struct {
 	Text string `json:"text"`
 }
 
+type FileData struct {
+	Name string `json:"name"`
+	Data []byte `json:"data"`
+}
+
 func (vi *VaultService) Create(ctx context.Context, userID int64, item VaultCreate) (int64, error) {
 	switch item.Type {
 	case model.ItemLogin:
@@ -83,6 +88,18 @@ func (vi *VaultService) Create(ctx context.Context, userID int64, item VaultCrea
 		if err := data.validate(); err != nil {
 			return 0, err
 		}
+	case model.ItemBinary:
+		var data FileData
+
+		err := json.Unmarshal(item.Data, &data)
+		if err != nil {
+			return 0, err
+		}
+
+		if err := data.validate(); err != nil {
+			return 0, err
+		}
+
 	default:
 		return 0, errors.New("unknown vault item type")
 	}
@@ -122,6 +139,13 @@ func (bc *BankCardData) validate() error {
 func (td *TextData) validate() error {
 	if td.Text == "" {
 		return errors.New("text are required")
+	}
+	return nil
+}
+
+func (fd *FileData) validate() error {
+	if fd.Name == "" || len(fd.Data) == 0 {
+		return errors.New("file is required")
 	}
 	return nil
 }

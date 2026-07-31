@@ -1,12 +1,13 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"os"
 	"passwordmanager/cmd/client/api"
 	service_model "passwordmanager/internal/model"
-
+	"path/filepath"
 	"strconv"
 
 	"charm.land/bubbles/v2/textinput"
@@ -133,7 +134,7 @@ func initialModel(client *api.Client) model {
 	vaultText.Placeholder = "text"
 
 	vaultBinary := textinput.New()
-	vaultBinary.Placeholder = "data (base64)"
+	vaultBinary.Placeholder = "path to file, e.g. /home/user/photo.png"
 
 	vaultNumber := textinput.New()
 	vaultNumber.Placeholder = "card number"
@@ -156,7 +157,6 @@ func initialModel(client *api.Client) model {
 
 		items: []string{
 			"Login",
-			"Vault",
 			"Exit",
 		},
 
@@ -287,7 +287,7 @@ func createLabelsFor(t service_model.ItemType) []string {
 	case service_model.ItemText:
 		labels = append(labels, "Text")
 	case service_model.ItemBinary:
-		labels = append(labels, "Data (base64)")
+		labels = append(labels, "Path to file")
 	case service_model.ItemBankCard:
 		labels = append(labels, "Card number", "Holder", "Month", "Year", "CVV")
 	}
@@ -332,8 +332,8 @@ func buildVaultData(m model) map[string]any {
 		data["password"] = m.vaultPassword.Value()
 	case service_model.ItemText:
 		data["text"] = m.vaultText.Value()
-	case service_model.ItemBinary:
-		data["data"] = m.vaultBinary.Value()
+	// ItemBinary сюда не попадает: файл читается и кодируется отдельно,
+	// см. createBinaryVaultCmd.
 	case service_model.ItemBankCard:
 		data["number"] = m.vaultNumber.Value()
 		data["holder"] = m.vaultHolder.Value()
@@ -343,6 +343,32 @@ func buildVaultData(m model) map[string]any {
 	}
 
 	return data
+}
+
+// createBinaryVaultCmd читает файл по указанному пути, кодирует его
+// содержимое в base64 и отправляет вместе с именем файла. Формат
+// {"name": ..., "data": <base64>} совпадает с FileData на сервере
+// (json.Unmarshal сам раскодирует base64-строку в []byte).
+func createBinaryVaultCmd(client *api.Client, title, path string) tea.Cmd {
+	return func() tea.Msg {
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			return VaultCreateResultMsg{err: fmt.Errorf("не удалось прочитать файл: %w", err)}
+		}
+
+		item := api.VaultCreate{
+			Title: title,
+			Type:  string(service_model.ItemBinary),
+			Data: map[string]any{
+				"name": filepath.Base(path),
+				"data": base64.StdEncoding.EncodeToString(raw),
+			},
+			Metadata: map[string]string{},
+		}
+
+		err = client.CreateVault(item)
+		return VaultCreateResultMsg{err: err}
+	}
 }
 
 // ---------- screen updates ----------
@@ -403,6 +429,10 @@ func vaultCreateUpdate(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			fields[m.createFocus].Focus()
 
 		case "enter":
+			if m.selectedType == service_model.ItemBinary {
+				return m, createBinaryVaultCmd(m.client, m.createTitle.Value(), m.vaultBinary.Value())
+			}
+
 			item := api.VaultCreate{
 				Title:    m.createTitle.Value(),
 				Type:     string(m.selectedType),
@@ -446,6 +476,7 @@ func vaultIDUpdate(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+// menuUpdate реалезует логику для главного меню
 func menuUpdate(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
@@ -472,14 +503,6 @@ func menuUpdate(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor = 0
 
 			case 1:
-				if m.client.Token == "" {
-					m.screen = LoginScreen
-					m.username.Focus()
-				} else {
-					m.screen = VaultScreen
-				}
-
-			case 2:
 				return m, tea.Quit
 			}
 		}
