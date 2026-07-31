@@ -19,12 +19,26 @@ func NewVaultRepository(db *pgxpool.Pool) VaultRepositoryInterface {
 
 var _ VaultRepositoryInterface = (*vaultRepository)(nil)
 
-func (r *vaultRepository) Create(ctx context.Context, item model.VaultItem) error {
+func (r *vaultRepository) Create(
+	ctx context.Context,
+	item model.VaultItem,
+) error {
 
 	_, err := r.db.Exec(
 		ctx,
-		`INSERT INTO users(login, password_hash)
-		 VALUES($1, $2)`,
+		`
+		INSERT INTO vault_items(
+			user_id,
+			type,
+			title,
+			secret_data
+		)
+		VALUES($1, $2, $3, $4)
+		`,
+		item.UserID,
+		item.Type,
+		item.Title,
+		item.SecretData,
 	)
 
 	return err

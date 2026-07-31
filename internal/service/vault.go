@@ -85,10 +85,10 @@ func (vi *VaultService) Create(ctx context.Context, userID int64, item VaultCrea
 	}
 
 	vaultItem := model.VaultItem{
-		UserID: userID,
-		Type:   item.Type,
-		Title:  item.Title,
-		Secret: item.Data,
+		UserID:     userID,
+		Type:       item.Type,
+		Title:      item.Title,
+		SecretData: item.Data,
 	}
 
 	vi.vaultRepo.Create(ctx, vaultItem)

@@ -26,9 +26,12 @@ func NewVaultHandler(
 }
 
 func (h *VaultHandler) InitRoutes(r chi.Router) {
-	r.Use(middlewares.JWT(h.tokenService))
-	r.Route("/vault", func(r chi.Router) {
-		r.Post("/", h.Create)
+	r.Group(func(r chi.Router) {
+		r.Use(middlewares.JWT(h.tokenService))
+
+		r.Route("/vault", func(r chi.Router) {
+			r.Post("/", h.Create)
+		})
 	})
 }
 

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"strconv"
 	"time"
 
@@ -24,10 +25,10 @@ type Claims struct {
 
 func (m *TokenService) Generate(userID int64, login string) (string, error) {
 	claims := jwt.MapClaims{
-		"Subject": strconv.FormatInt(userID, 10),
-		"login":   login,
-		"exp":     time.Now().Add(24 * time.Hour).Unix(),
-		"iat":     time.Now().Unix(),
+		"sub":   strconv.FormatInt(userID, 10),
+		"login": login,
+		"exp":   time.Now().Add(24 * time.Hour).Unix(),
+		"iat":   time.Now().Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -39,16 +40,24 @@ func (m *TokenService) Parse(tokenString string) (*Claims, error) {
 	claims := &Claims{}
 
 	token, err := jwt.ParseWithClaims(
-		tokenString, claims,
+		tokenString,
+		claims,
 		func(t *jwt.Token) (any, error) {
+			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, errors.New("unexpected signing method")
+			}
+
 			return m.secret, nil
 		},
 	)
+
 	if err != nil {
-		return &Claims{}, err
+		return nil, err
 	}
+
 	if !token.Valid {
-		return &Claims{}, err
+		return nil, errors.New("invalid token")
 	}
-	return claims, err
+
+	return claims, nil
 }

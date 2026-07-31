@@ -12,11 +12,11 @@ const (
 )
 
 type VaultItem struct {
-	ID        int64
-	UserID    int64
-	Type      ItemType
-	Title     string
-	Secret    []byte
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID         int64
+	UserID     int64
+	Type       ItemType
+	Title      string
+	SecretData []byte
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"passwordmanager/internal/service"
+	"strconv"
 	"strings"
 )
 
@@ -32,10 +33,16 @@ func JWT(manager service.TokenManagerInterface) func(http.Handler) http.Handler 
 				return
 			}
 
+			userID, err := strconv.ParseInt(claims.Subject, 10, 64)
+			if err != nil {
+				http.Error(w, "invalid user id", http.StatusUnauthorized)
+				return
+			}
+
 			ctx := context.WithValue(
 				r.Context(),
 				UserIDKey,
-				claims.Subject,
+				userID,
 			)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
