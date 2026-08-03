@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 type VaultCreate struct {
@@ -71,6 +73,44 @@ func (c *Client) Login(login, password string) error {
 	return nil
 }
 
+func (c *Client) Register(login, password string) error {
+
+	body, _ := json.Marshal(LoginRequest{
+		Login:    login,
+		Password: password,
+	})
+
+	req, err := http.NewRequest(
+		POST,
+		c.BaseURL+"/auth/register",
+		bytes.NewReader(body),
+	)
+
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set(
+		"Content-Type",
+		"application/json",
+	)
+
+	resp, err := c.Client.Do(req)
+
+	if err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("register failed: %s: %s", resp.Status, strings.TrimSpace(string(body)))
+	}
+
+	return nil
+}
+
 func (c *Client) CreateVault(item VaultCreate) error {
 	body, _ := json.Marshal(item)
 
@@ -102,10 +142,12 @@ func (c *Client) CreateVault(item VaultCreate) error {
 }
 
 type VaultItem struct {
-	ID     int64  `json:"id"`
-	Type   string `json:"type"`
-	Title  string `json:"title"`
-	Secret []byte `json:"secret_data"`
+	ID       int64             `json:"id"`
+	Type     string            `json:"type"`
+	Title    string            `json:"title"`
+	Secret   []byte            `json:"secret_data"`
+	Metadata map[string]string `json:"metadata"`
+	Data     string            `json:"data"`
 }
 
 func (c *Client) ListVault() ([]VaultItem, error) {

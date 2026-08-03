@@ -9,14 +9,14 @@ import (
 
 func NewPostgres(
 	host string,
-	port int,
+	port string,
 	user string,
 	password string,
 	dbname string,
 ) (*sql.DB, error) {
 
 	dsn := fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
+		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		user,
 		password,
 		host,

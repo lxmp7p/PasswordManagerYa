@@ -24,10 +24,3 @@ CREATE TABLE vault_metadata (
     key TEXT NOT NULL,
     value TEXT NOT NULL
 );
-
-CREATE TABLE vault_files (
-    id BIGSERIAL PRIMARY KEY,
-    item_id BIGINT REFERENCES vault_items(id),
-    filename TEXT,
-    content BYTEA
-);

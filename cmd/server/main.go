@@ -11,10 +11,12 @@ import (
 	"passwordmanager/internal/repository"
 	"passwordmanager/internal/service"
 
+	"passwordmanager/internal/config"
+
 	"github.com/go-chi/chi/v5"
 )
 
-var secretToken = "MEGASECRETKEY"
+var secretToken string
 
 func main() {
 	r := chi.NewRouter()
@@ -26,7 +28,13 @@ func main() {
 		),
 	)
 
-	db, err := repository.New(context.Background(), "host=localhost port=5432 user=app password=testpass dbname=passwordmanager")
+	cfg, err := config.Load()
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+
+	db, err := repository.New(context.Background(), cfg.DBConnectionString())
 	if err != nil {
 		logger.Error(err.Error())
 		os.Exit(1)
@@ -35,7 +43,7 @@ func main() {
 	userRepository := repository.NewUserRepository(db.Pool)
 	vaultRepository := repository.NewVaultRepository(db.Pool)
 
-	tokenService := service.NewTokenService(secretToken)
+	tokenService := service.NewTokenService(cfg.JWTSecret)
 	authService := service.NewAuthService(logger, userRepository, tokenService)
 	vaultService := service.NewVaultService(logger, vaultRepository)
 
@@ -44,7 +52,7 @@ func main() {
 	h.InitRoutes(r)
 
 	server := &http.Server{
-		Addr:    ":4443",
+		Addr:    cfg.ServerPort,
 		Handler: r,
 	}
 
