@@ -69,32 +69,22 @@ type model struct {
 
 	loginError string
 
-	// Поля и статус для экрана регистрации.
 	regUsername   textinput.Model
 	regPassword   textinput.Model
 	registerError string
 	registerOK    string
 
-	vaultItems []api.VaultItem
-	vaultError string
-	// vaultStatus — неошибочные информационные сообщения (например, куда
-	// сохранён файл). Показывается рядом с vaultError, но не как ошибка.
+	vaultItems  []api.VaultItem
+	vaultError  string
 	vaultStatus string
 
-	// vaultDetail — элемент, полученный отдельным вызовом GetVaultByID
-	// (после выбора строки в списке), для детального просмотра.
 	vaultDetail *api.VaultItem
 
-	// Выбранный тип создаваемого vault-элемента.
 	selectedType service_model.ItemType
 
-	// Поле "Title" — общее для всех типов.
 	createTitle textinput.Model
-	// Индекс текущего сфокусированного поля в форме создания (0 = createTitle).
 	createFocus int
 
-	// Поля под конкретные типы. Показываются/используются только те,
-	// что относятся к m.selectedType (см. createFieldsFor / createLabelsFor).
 	vaultLogin    textinput.Model
 	vaultPassword textinput.Model
 	vaultText     textinput.Model
@@ -105,7 +95,6 @@ type model struct {
 	vaultYear     textinput.Model
 	vaultCVV      textinput.Model
 
-	// Метаданные vault-элемента, общие для всех типов.
 	vaultMetadata textinput.Model
 }
 
@@ -241,7 +230,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		m.registerError = ""
 		m.registerOK = "Регистрация прошла успешно, теперь можно войти"
-		// Переносим введённый логин на экран входа, чтобы не вводить заново.
 		m.screen = LoginScreen
 		m.username.SetValue(m.regUsername.Value())
 		m.username.Blur()
@@ -331,10 +319,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// ---------- helpers для динамической формы создания vault-элемента ----------
-
-// createFieldsFor возвращает указатели на поля ввода, актуальные для
-// текущего m.selectedType. Индекс 0 — всегда createTitle.
 func createFieldsFor(m *model) []*textinput.Model {
 	fields := []*textinput.Model{&m.createTitle}
 
@@ -354,7 +338,6 @@ func createFieldsFor(m *model) []*textinput.Model {
 	return fields
 }
 
-// createLabelsFor — подписи полей в том же порядке, что и createFieldsFor.
 func createLabelsFor(t service_model.ItemType) []string {
 	labels := []string{"Title"}
 
@@ -374,7 +357,6 @@ func createLabelsFor(t service_model.ItemType) []string {
 	return labels
 }
 
-// resetCreateForm очищает и сбрасывает фокус всех полей формы создания.
 func resetCreateForm(m *model) {
 	m.createTitle.SetValue("")
 	m.vaultLogin.SetValue("")
@@ -403,7 +385,6 @@ func resetCreateForm(m *model) {
 	m.createTitle.Focus()
 }
 
-// buildVaultData собирает map[string]any под конкретный тип из значений полей.
 func buildVaultData(m model) map[string]any {
 	data := map[string]any{}
 
@@ -413,8 +394,6 @@ func buildVaultData(m model) map[string]any {
 		data["password"] = m.vaultPassword.Value()
 	case service_model.ItemText:
 		data["text"] = m.vaultText.Value()
-	// ItemBinary сюда не попадает: файл читается и кодируется отдельно,
-	// см. createBinaryVaultCmd.
 	case service_model.ItemBankCard:
 		data["number"] = m.vaultNumber.Value()
 		data["holder"] = m.vaultHolder.Value()
@@ -426,8 +405,6 @@ func buildVaultData(m model) map[string]any {
 	return data
 }
 
-// parseMetadataInput разбирает строку вида "key1=value1;key2=value2" в map.
-// Пустые пары и пары без ключа игнорируются. Пустой ввод -> пустая map.
 func parseMetadataInput(raw string) map[string]string {
 	result := map[string]string{}
 
@@ -454,8 +431,6 @@ func parseMetadataInput(raw string) map[string]string {
 	return result
 }
 
-// formatMetadata форматирует map метаданных в одну строку для отображения,
-// ключи сортируются для стабильного вывода.
 func formatMetadata(md map[string]string) string {
 	if len(md) == 0 {
 		return "-"
@@ -475,10 +450,6 @@ func formatMetadata(md map[string]string) string {
 	return strings.Join(pairs, ", ")
 }
 
-// createBinaryVaultCmd читает файл по указанному пути, кодирует его
-// содержимое в base64 и отправляет вместе с именем файла. Формат
-// {"name": ..., "data": <base64>} совпадает с FileData на сервере
-// (json.Unmarshal сам раскодирует base64-строку в []byte).
 func createBinaryVaultCmd(client *api.Client, title, path string, metadata map[string]string) tea.Cmd {
 	return func() tea.Msg {
 		raw, err := os.ReadFile(path)
@@ -501,12 +472,6 @@ func createBinaryVaultCmd(client *api.Client, title, path string, metadata map[s
 	}
 }
 
-// decodeSecretData раскодирует item.Data (base64-строка, как её отдаёт
-// сервер для []byte-поля SecretData) и разбирает получившийся JSON в
-// структуру, соответствующую itemType, возвращая человекочитаемое
-// представление. Структуры-зеркала LoginPasswordData/TextData/BankCardData/
-// FileData повторяют JSON-теги из service-пакета сервера, но объявлены
-// локально, чтобы клиент не тянул зависимость на internal/service.
 func decodeSecretData(itemType, encodedData string) (string, error) {
 	raw, err := base64.StdEncoding.DecodeString(encodedData)
 	if err != nil {
@@ -551,7 +516,6 @@ func decodeSecretData(itemType, encodedData string) (string, error) {
 		), nil
 
 	case service_model.ItemBinary:
-		// FileData.Data — тоже []byte, поэтому внутри ещё один слой base64.
 		var d struct {
 			Name string `json:"name"`
 			Data []byte `json:"data"`
@@ -566,9 +530,6 @@ func decodeSecretData(itemType, encodedData string) (string, error) {
 	}
 }
 
-// saveBinaryFileCmd раскодирует BINARY vault-элемент (два слоя base64,
-// см. decodeSecretData) и сохраняет исходный файл на диск в текущей
-// рабочей директории под его оригинальным именем.
 func saveBinaryFileCmd(item api.VaultItem) tea.Cmd {
 	return func() tea.Msg {
 		raw, err := base64.StdEncoding.DecodeString(item.Data)
@@ -601,8 +562,6 @@ func saveBinaryFileCmd(item api.VaultItem) tea.Cmd {
 		return VaultSaveResultMsg{path: abs}
 	}
 }
-
-// ---------- screen updates ----------
 
 func vaultTypeUpdate(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -920,8 +879,6 @@ func vaultListUpdate(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// vaultDetailUpdate управляет экраном детального просмотра одного элемента,
-// полученного через GetVaultByID (после выбора строки в списке Enter'ом).
 func vaultDetailUpdate(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
@@ -929,8 +886,6 @@ func vaultDetailUpdate(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 
 		case "esc":
-			// Список (m.vaultItems) мы не трогали при открытии деталей,
-			// поэтому просто возвращаемся назад без повторной загрузки.
 			m.screen = VaultListScreen
 			m.vaultDetail = nil
 			m.vaultError = ""
@@ -967,8 +922,6 @@ func loadVaultById(client *api.Client, id int64) tea.Cmd {
 		return VaultItemResultMsg{item: item, err: err}
 	}
 }
-
-// ---------- views ----------
 
 func (m model) View() tea.View {
 	switch m.screen {
@@ -1131,8 +1084,6 @@ func vaultView(m model) tea.View {
 	return tea.NewView(s)
 }
 
-// vaultDetailView показывает полную информацию по одному элементу,
-// полученному отдельным вызовом GetVaultByID.
 func vaultDetailView(m model) tea.View {
 	if m.vaultDetail == nil {
 		return tea.NewView("Нет данных\n\nEsc - back")
