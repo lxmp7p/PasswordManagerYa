@@ -3,15 +3,13 @@ package repository
 import (
 	"context"
 	"passwordmanager/internal/model"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type vaultRepository struct {
-	db *pgxpool.Pool
+	db DBinterface
 }
 
-func NewVaultRepository(db *pgxpool.Pool) VaultRepositoryInterface {
+func NewVaultRepository(db DBinterface) VaultRepositoryInterface {
 	return &vaultRepository{
 		db: db,
 	}

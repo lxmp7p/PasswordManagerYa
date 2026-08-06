@@ -3,12 +3,21 @@ package repository
 import (
 	"context"
 	"passwordmanager/internal/model"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type User struct {
 	ID           int64
 	Login        string
 	PasswordHash string
+}
+
+type DBinterface interface {
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
 }
 
 type UserRepositoryInterface interface {

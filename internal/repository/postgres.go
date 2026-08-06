@@ -27,5 +27,7 @@ func New(ctx context.Context, dsn string) (*Repository, error) {
 }
 
 func (r *Repository) Close() {
-	r.Pool.Close()
+	if r.Pool != nil {
+		r.Pool.Close()
+	}
 }

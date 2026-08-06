@@ -2,15 +2,13 @@ package repository
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type userRepository struct {
-	db *pgxpool.Pool
+	db DBinterface
 }
 
-func NewUserRepository(db *pgxpool.Pool) UserRepositoryInterface {
+func NewUserRepository(db DBinterface) UserRepositoryInterface {
 	return &userRepository{
 		db: db,
 	}
