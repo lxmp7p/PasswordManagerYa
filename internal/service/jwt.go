@@ -2,7 +2,6 @@ package service
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -25,9 +24,6 @@ type Claims struct {
 }
 
 func (m *TokenService) Generate(userID int64, login string) (string, error) {
-	for i := range 6 {
-		fmt.Println(i)
-	}
 	claims := jwt.MapClaims{
 		"sub":   strconv.FormatInt(userID, 10),
 		"login": login,
