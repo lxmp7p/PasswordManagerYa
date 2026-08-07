@@ -20,3 +20,8 @@ type VaultServiceInterface interface {
 	Get(ctx context.Context, userID, itemID int64) (dto.VaultResponseGet, error)
 	List(ctx context.Context, userID int64) ([]dto.VaultResponseGet, error)
 }
+
+type CryptoServiceInterface interface {
+	Encrypt(data []byte) ([]byte, error)
+	Decrypt(data []byte) ([]byte, error)
+}

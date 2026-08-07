@@ -49,7 +49,12 @@ func main() {
 
 	tokenService := service.NewTokenService(cfg.JWTSecret)
 	authService := service.NewAuthService(logger, userRepository, tokenService)
-	vaultService := service.NewVaultService(logger, vaultRepository)
+	cryptoService, err := service.NewCryptoService(cfg.VaultEncryptionKey)
+	if err != nil {
+		logger.Error("crypto init failed", "error", err)
+		os.Exit(1)
+	}
+	vaultService := service.NewVaultService(logger, vaultRepository, cryptoService)
 
 	h := handler.NewHandler(logger, authService, vaultService, tokenService)
 

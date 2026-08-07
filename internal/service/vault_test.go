@@ -17,6 +17,27 @@ type MockVaultRepository struct {
 	mock.Mock
 }
 
+func newTestCryptoService(t *testing.T) CryptoServiceInterface {
+	crypto, err := NewCryptoService(
+		"01234567890123456789012345678901",
+	)
+
+	require.NoError(t, err)
+
+	return crypto
+}
+
+func newTestVaultService(
+	t *testing.T,
+	repo *MockVaultRepository,
+) VaultServiceInterface {
+	return NewVaultService(
+		slog.Default(),
+		repo,
+		newTestCryptoService(t),
+	)
+}
+
 func (m *MockVaultRepository) Create(
 	ctx context.Context,
 	item model.VaultItem,
@@ -81,10 +102,16 @@ var _ repository.VaultRepositoryInterface = (*MockVaultRepository)(nil)
 func TestVaultService_Get(t *testing.T) {
 	repo := new(MockVaultRepository)
 
-	service := NewVaultService(
-		slog.Default(),
-		repo,
-	)
+	service := newTestVaultService(t, repo)
+
+	crypto := newTestCryptoService(t)
+
+	encrypted, err := crypto.Encrypt([]byte(`{
+	"login":"admin",
+	"password":"123"
+}`))
+
+	require.NoError(t, err)
 
 	repo.On(
 		"GetByID",
@@ -94,8 +121,9 @@ func TestVaultService_Get(t *testing.T) {
 	).
 		Return(
 			&model.VaultItem{
-				ID:    1,
-				Title: "test",
+				ID:         1,
+				Title:      "test",
+				SecretData: encrypted,
 			},
 			nil,
 		)
@@ -131,10 +159,7 @@ func TestVaultService_Get(t *testing.T) {
 func TestVaultService_Create_Login_Success(t *testing.T) {
 	repo := new(MockVaultRepository)
 
-	service := NewVaultService(
-		slog.Default(),
-		repo,
-	)
+	service := newTestVaultService(t, repo)
 
 	data := []byte(`{
 		"login":"admin",
@@ -240,12 +265,14 @@ func TestBankCardValidate(t *testing.T) {
 func TestVaultService_List_Success(t *testing.T) {
 	repo := new(MockVaultRepository)
 
-	service := NewVaultService(
-		slog.Default(),
-		repo,
-	)
+	service := newTestVaultService(t, repo)
 
 	now := time.Now()
+	crypto := newTestCryptoService(t)
+
+	encrypted, err := crypto.Encrypt([]byte("secret"))
+
+	require.NoError(t, err)
 
 	repo.On(
 		"List",
@@ -259,7 +286,7 @@ func TestVaultService_List_Success(t *testing.T) {
 					UserID:     2,
 					Type:       model.ItemLogin,
 					Title:      "github",
-					SecretData: []byte("secret"),
+					SecretData: encrypted,
 					CreatedAt:  now,
 					UpdatedAt:  now,
 				},
@@ -301,10 +328,7 @@ func TestVaultService_List_Success(t *testing.T) {
 func TestVaultService_List_Error(t *testing.T) {
 	repo := new(MockVaultRepository)
 
-	service := NewVaultService(
-		slog.Default(),
-		repo,
-	)
+	service := newTestVaultService(t, repo)
 
 	repo.On(
 		"List",
@@ -330,10 +354,7 @@ func TestVaultService_List_Error(t *testing.T) {
 func TestVaultService_List_MetadataError(t *testing.T) {
 	repo := new(MockVaultRepository)
 
-	service := NewVaultService(
-		slog.Default(),
-		repo,
-	)
+	service := newTestVaultService(t, repo)
 
 	repo.On(
 		"List",
@@ -372,10 +393,7 @@ func TestVaultService_List_MetadataError(t *testing.T) {
 func TestVaultService_Create_CreateError(t *testing.T) {
 	repo := new(MockVaultRepository)
 
-	service := NewVaultService(
-		slog.Default(),
-		repo,
-	)
+	service := newTestVaultService(t, repo)
 
 	repo.On(
 		"Create",
@@ -409,10 +427,7 @@ func TestVaultService_Create_CreateError(t *testing.T) {
 func TestVaultService_Create_MetadataError(t *testing.T) {
 	repo := new(MockVaultRepository)
 
-	service := NewVaultService(
-		slog.Default(),
-		repo,
-	)
+	service := newTestVaultService(t, repo)
 
 	repo.On(
 		"Create",
@@ -459,10 +474,7 @@ func TestVaultService_Create_MetadataError(t *testing.T) {
 func TestVaultService_Create_UnknownType(t *testing.T) {
 	repo := new(MockVaultRepository)
 
-	service := NewVaultService(
-		slog.Default(),
-		repo,
-	)
+	service := newTestVaultService(t, repo)
 
 	id, err := service.Create(
 		context.Background(),
@@ -479,10 +491,7 @@ func TestVaultService_Create_UnknownType(t *testing.T) {
 func TestVaultService_Create_Text_Success(t *testing.T) {
 	repo := new(MockVaultRepository)
 
-	service := NewVaultService(
-		slog.Default(),
-		repo,
-	)
+	service := newTestVaultService(t, repo)
 
 	repo.On(
 		"Create",
@@ -523,10 +532,7 @@ func TestVaultService_Create_Text_Success(t *testing.T) {
 func TestVaultService_Create_BankCard_Success(t *testing.T) {
 	repo := new(MockVaultRepository)
 
-	service := NewVaultService(
-		slog.Default(),
-		repo,
-	)
+	service := newTestVaultService(t, repo)
 
 	repo.On(
 		"Create",
@@ -571,10 +577,7 @@ func TestVaultService_Create_BankCard_Success(t *testing.T) {
 func TestVaultService_Create_Binary_Success(t *testing.T) {
 	repo := new(MockVaultRepository)
 
-	service := NewVaultService(
-		slog.Default(),
-		repo,
-	)
+	service := newTestVaultService(t, repo)
 
 	repo.On(
 		"Create",
@@ -616,10 +619,7 @@ func TestVaultService_Create_Binary_Success(t *testing.T) {
 func TestVaultService_Get_GetByIDError(t *testing.T) {
 	repo := new(MockVaultRepository)
 
-	service := NewVaultService(
-		slog.Default(),
-		repo,
-	)
+	service := newTestVaultService(t, repo)
 
 	repo.On(
 		"GetByID",
@@ -647,10 +647,12 @@ func TestVaultService_Get_GetByIDError(t *testing.T) {
 func TestVaultService_Get_MetadataError(t *testing.T) {
 	repo := new(MockVaultRepository)
 
-	service := NewVaultService(
-		slog.Default(),
-		repo,
-	)
+	service := newTestVaultService(t, repo)
+
+	crypto := newTestCryptoService(t)
+
+	encrypted, err := crypto.Encrypt([]byte("secret"))
+	require.NoError(t, err)
 
 	repo.On(
 		"GetByID",
@@ -660,7 +662,8 @@ func TestVaultService_Get_MetadataError(t *testing.T) {
 	).
 		Return(
 			&model.VaultItem{
-				ID: 1,
+				ID:         1,
+				SecretData: encrypted,
 			},
 			nil,
 		)
@@ -690,10 +693,7 @@ func TestVaultService_Get_MetadataError(t *testing.T) {
 func TestVaultService_Create_InvalidJSON(t *testing.T) {
 	repo := new(MockVaultRepository)
 
-	service := NewVaultService(
-		slog.Default(),
-		repo,
-	)
+	service := newTestVaultService(t, repo)
 
 	id, err := service.Create(
 		context.Background(),
@@ -711,10 +711,7 @@ func TestVaultService_Create_InvalidJSON(t *testing.T) {
 func TestVaultService_Create_LoginValidationError(t *testing.T) {
 	repo := new(MockVaultRepository)
 
-	service := NewVaultService(
-		slog.Default(),
-		repo,
-	)
+	service := newTestVaultService(t, repo)
 
 	id, err := service.Create(
 		context.Background(),
@@ -730,4 +727,99 @@ func TestVaultService_Create_LoginValidationError(t *testing.T) {
 
 	require.Error(t, err)
 	require.Equal(t, int64(0), id)
+}
+
+func TestVaultService_Create_EncryptError(t *testing.T) {
+	repo := new(MockVaultRepository)
+	crypto := new(MockCryptoService)
+
+	service := NewVaultService(
+		slog.Default(),
+		repo,
+		crypto,
+	)
+
+	crypto.On(
+		"Encrypt",
+		mock.Anything,
+	).
+		Return(
+			nil,
+			errors.New("encrypt error"),
+		)
+
+	id, err := service.Create(
+		context.Background(),
+		10,
+		VaultCreate{
+			Type: model.ItemLogin,
+			Data: []byte(`{
+				"login":"admin",
+				"password":"123"
+			}`),
+		},
+	)
+
+	require.Error(t, err)
+	require.Equal(t, int64(0), id)
+
+	crypto.AssertExpectations(t)
+}
+
+func TestVaultService_Create_SavesEncryptedData(t *testing.T) {
+	repo := new(MockVaultRepository)
+	crypto := new(MockCryptoService)
+
+	service := NewVaultService(
+		slog.Default(),
+		repo,
+		crypto,
+	)
+
+	encrypted := []byte("encrypted")
+
+	crypto.On(
+		"Encrypt",
+		mock.Anything,
+	).
+		Return(
+			encrypted,
+			nil,
+		)
+
+	repo.On(
+		"Create",
+		mock.Anything,
+		mock.MatchedBy(func(item model.VaultItem) bool {
+			return string(item.SecretData) == "encrypted"
+		}),
+	).
+		Return(
+			int64(1),
+			nil,
+		)
+
+	repo.On(
+		"CreateMetadata",
+		mock.Anything,
+		int64(1),
+		mock.Anything,
+	).
+		Return(nil)
+
+	id, err := service.Create(
+		context.Background(),
+		10,
+		VaultCreate{
+			Type: model.ItemText,
+			Data: []byte(`{
+				"text":"secret"
+			}`),
+		},
+	)
+
+	require.NoError(t, err)
+	require.Equal(t, int64(1), id)
+
+	repo.AssertExpectations(t)
 }

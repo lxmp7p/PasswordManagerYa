@@ -8,6 +8,8 @@ import (
 	"passwordmanager/internal/dto"
 	"passwordmanager/internal/model"
 	"passwordmanager/internal/repository"
+
+	"github.com/stretchr/testify/mock"
 )
 
 type VaultCreate struct {
@@ -20,15 +22,18 @@ type VaultCreate struct {
 type VaultService struct {
 	logger    *slog.Logger
 	vaultRepo repository.VaultRepositoryInterface
+	crypto    CryptoServiceInterface
 }
 
 func NewVaultService(
 	logger *slog.Logger,
 	vaultRepo repository.VaultRepositoryInterface,
+	crypto CryptoServiceInterface,
 ) VaultServiceInterface {
 	return &VaultService{
 		logger:    logger,
 		vaultRepo: vaultRepo,
+		crypto:    crypto,
 	}
 }
 
@@ -104,11 +109,16 @@ func (vi *VaultService) Create(ctx context.Context, userID int64, item VaultCrea
 		return 0, errors.New("unknown vault item type")
 	}
 
+	encrypted, err := vi.crypto.Encrypt(item.Data)
+	if err != nil {
+		return 0, err
+	}
+
 	vaultItem := model.VaultItem{
 		UserID:     userID,
 		Type:       item.Type,
 		Title:      item.Title,
-		SecretData: item.Data,
+		SecretData: encrypted,
 	}
 
 	newItemId, err := vi.vaultRepo.Create(ctx, vaultItem)
@@ -156,6 +166,11 @@ func (vi *VaultService) Get(ctx context.Context, itemID, userID int64) (dto.Vaul
 		return dto.VaultResponseGet{}, err
 	}
 
+	decrypted, err := vi.crypto.Encrypt(vault.SecretData)
+	if err != nil {
+		return dto.VaultResponseGet{}, err
+	}
+
 	metadata, err := vi.vaultRepo.GetMetadata(ctx, itemID)
 	if err != nil {
 		return dto.VaultResponseGet{}, err
@@ -165,7 +180,7 @@ func (vi *VaultService) Get(ctx context.Context, itemID, userID int64) (dto.Vaul
 		ID:        vault.ID,
 		Type:      string(vault.Type),
 		Title:     vault.Title,
-		Data:      vault.SecretData,
+		Data:      decrypted,
 		Metadata:  metadata,
 		CreatedAt: vault.CreatedAt,
 		UpdatedAt: vault.UpdatedAt,
@@ -199,4 +214,28 @@ func (vi *VaultService) List(ctx context.Context, userID int64) ([]dto.VaultResp
 	}
 
 	return result, nil
+}
+
+type MockCryptoService struct {
+	mock.Mock
+}
+
+func (m *MockCryptoService) Encrypt(data []byte) ([]byte, error) {
+	args := m.Called(data)
+
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).([]byte), args.Error(1)
+}
+
+func (m *MockCryptoService) Decrypt(data []byte) ([]byte, error) {
+	args := m.Called(data)
+
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).([]byte), args.Error(1)
 }

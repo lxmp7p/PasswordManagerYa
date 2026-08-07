@@ -16,7 +16,8 @@ type Config struct {
 
 	ServerPort string
 
-	JWTSecret string
+	JWTSecret          string
+	VaultEncryptionKey string
 }
 
 func Load() (*Config, error) {
@@ -32,7 +33,8 @@ func Load() (*Config, error) {
 
 		ServerPort: os.Getenv("SERVER_PORT"),
 
-		JWTSecret: os.Getenv("JWT_SECRET"),
+		JWTSecret:          os.Getenv("JWT_SECRET"),
+		VaultEncryptionKey: os.Getenv("ENCRYPTION_KEY"),
 	}, nil
 }
 
