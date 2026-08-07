@@ -2,3 +2,4 @@ config.env
 ./bin
 *crt
 *key
+coverage.out

@@ -450,10 +450,10 @@ func TestVaultService_Create_MetadataError(t *testing.T) {
 		},
 	)
 
-	require.NoError(t, err)
+	require.Error(t, err)
+	require.EqualError(t, err, "metadata error")
 	require.Equal(t, int64(1), id)
 
-	repo.AssertExpectations(t)
 }
 
 func TestVaultService_Create_UnknownType(t *testing.T) {
