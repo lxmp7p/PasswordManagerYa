@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"passwordmanager/internal/service"
 
@@ -11,6 +11,7 @@ import (
 
 type AuthHandler struct {
 	authService service.AuthServiceInterface
+	logger      *slog.Logger
 }
 
 type RegisterRequest struct {
@@ -22,8 +23,12 @@ type LoginResponse struct {
 	Token string `json:"token"`
 }
 
-func NewAuthHandler(authService service.AuthServiceInterface) *AuthHandler {
+func NewAuthHandler(
+	logger *slog.Logger,
+	authService service.AuthServiceInterface,
+) *AuthHandler {
 	return &AuthHandler{
+		logger:      logger,
 		authService: authService,
 	}
 }
@@ -44,9 +49,10 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := h.authService.Login(context.Background(), req.Login, req.Password)
+	resp, err := h.authService.Login(r.Context(), req.Login, req.Password)
 	if err != nil {
 		http.Error(w, "failed to login", http.StatusBadRequest)
+		h.logger.Error(err.Error())
 		return
 	}
 
@@ -70,7 +76,8 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	err = h.authService.Register(r.Context(), req.Login, req.Password)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		h.logger.Error(err.Error())
 		return
 	}
 

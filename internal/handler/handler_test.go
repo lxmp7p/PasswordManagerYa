@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"log/slog"
 	"passwordmanager/internal/dto"
 	"passwordmanager/internal/service"
 	"testing"
@@ -64,6 +65,7 @@ func TestNewHandler(t *testing.T) {
 	tokenService := new(MockTokenService)
 
 	h := NewHandler(
+		slog.Default(),
 		authService,
 		vaultService,
 		tokenService,
@@ -80,6 +82,7 @@ func TestHandler_InitRoutes(t *testing.T) {
 	tokenService := new(MockTokenService)
 
 	h := NewHandler(
+		slog.Default(),
 		authService,
 		vaultService,
 		tokenService,

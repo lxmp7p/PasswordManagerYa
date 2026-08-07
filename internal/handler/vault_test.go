@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -66,11 +67,7 @@ func contextWithUserID(
 	ctx context.Context,
 	userID int64,
 ) context.Context {
-	return context.WithValue(
-		ctx,
-		middlewares.UserIDKey,
-		userID,
-	)
+	return middlewares.NewContextWithUserID(ctx, userID)
 }
 
 func (m *VaultService) List(
@@ -88,6 +85,7 @@ func (m *VaultService) List(
 
 func setupVaultRouter(vaultService *VaultService) chi.Router {
 	h := NewVaultHandler(
+		slog.Default(),
 		vaultService,
 		nil,
 	)

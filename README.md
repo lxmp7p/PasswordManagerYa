@@ -7,6 +7,17 @@
 - CLI-клиента для доступа пользователя к своим данным;
 - мигратора базы данных.
 
+Собрать бинарники:
+- make build
+
+Создать сертификаты:
+openssl req -x509 -newkey rsa:4096 \
+-keyout server.key \
+-out server.crt \
+-days 365 \
+-nodes \
+-subj "/CN=localhost"
+
 ## Возможности
 
 ### Сервер
@@ -62,3 +73,4 @@ CLI-клиент поддерживает:
 
 ```bash
 passwordmanager-client --version
+

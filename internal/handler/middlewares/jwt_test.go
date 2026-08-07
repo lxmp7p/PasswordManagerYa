@@ -194,7 +194,7 @@ func TestUserIDFromContext(t *testing.T) {
 	}{
 		{
 			name:          "valid userID",
-			ctx:           context.WithValue(context.Background(), UserIDKey, int64(42)),
+			ctx:           context.WithValue(context.Background(), userIDKey, int64(42)),
 			expectedID:    42,
 			expectedFound: true,
 		},
@@ -206,19 +206,19 @@ func TestUserIDFromContext(t *testing.T) {
 		},
 		{
 			name:          "wrong type in context",
-			ctx:           context.WithValue(context.Background(), UserIDKey, "not_an_int"),
+			ctx:           context.WithValue(context.Background(), userIDKey, "not_an_int"),
 			expectedID:    0,
 			expectedFound: false,
 		},
 		{
 			name:          "zero userID",
-			ctx:           context.WithValue(context.Background(), UserIDKey, int64(0)),
+			ctx:           context.WithValue(context.Background(), userIDKey, int64(0)),
 			expectedID:    0,
 			expectedFound: true,
 		},
 		{
 			name:          "large userID",
-			ctx:           context.WithValue(context.Background(), UserIDKey, int64(9223372036854775807)),
+			ctx:           context.WithValue(context.Background(), userIDKey, int64(9223372036854775807)),
 			expectedID:    9223372036854775807,
 			expectedFound: true,
 		},
@@ -395,12 +395,12 @@ func TestJWTWhitespaceInToken(t *testing.T) {
 }
 
 func TestUserIDKeyConstant(t *testing.T) {
-	if UserIDKey == "" {
+	if userIDKey == "" {
 		t.Error("UserIDKey should not be empty")
 	}
 
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, UserIDKey, int64(123))
+	ctx = context.WithValue(ctx, userIDKey, int64(123))
 
 	userID, ok := UserIDFromContext(ctx)
 	if !ok || userID != 123 {

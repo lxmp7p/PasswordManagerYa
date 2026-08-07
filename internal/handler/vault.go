@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"passwordmanager/internal/dto"
 	"passwordmanager/internal/handler/middlewares"
@@ -13,14 +14,17 @@ import (
 )
 
 type VaultHandler struct {
+	logger       *slog.Logger
 	tokenService service.TokenManagerInterface
 	vaultService service.VaultServiceInterface
 }
 
 func NewVaultHandler(
+	logger *slog.Logger,
 	vaultService service.VaultServiceInterface,
 	tokenService service.TokenManagerInterface) *VaultHandler {
 	return &VaultHandler{
+		logger:       logger,
 		vaultService: vaultService,
 		tokenService: tokenService,
 	}
@@ -39,7 +43,7 @@ func (h *VaultHandler) InitRoutes(r chi.Router) {
 }
 
 func (h *VaultHandler) Create(w http.ResponseWriter, r *http.Request) {
-		var req dto.VaultCreateInDto
+	var req dto.VaultCreateInDto
 
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
@@ -64,7 +68,8 @@ func (h *VaultHandler) Create(w http.ResponseWriter, r *http.Request) {
 	id, err := h.vaultService.Create(r.Context(), userID, item)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		h.logger.Error(err.Error())
 		return
 	}
 
@@ -92,7 +97,8 @@ func (h *VaultHandler) Get(w http.ResponseWriter, r *http.Request) {
 	vault, err := h.vaultService.Get(r.Context(), id, userID)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		h.logger.Error(err.Error())
 		return
 	}
 
@@ -112,7 +118,8 @@ func (h *VaultHandler) List(w http.ResponseWriter, r *http.Request) {
 	vaults, err := h.vaultService.List(r.Context(), userID)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		h.logger.Error(err.Error())
 		return
 	}
 

@@ -8,7 +8,9 @@ import (
 	"strings"
 )
 
-var UserIDKey = "userID"
+type contextKey string
+
+const userIDKey contextKey = "userID"
 
 func JWT(manager service.TokenManagerInterface) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -41,7 +43,7 @@ func JWT(manager service.TokenManagerInterface) func(http.Handler) http.Handler 
 
 			ctx := context.WithValue(
 				r.Context(),
-				UserIDKey,
+				userIDKey,
 				userID,
 			)
 			next.ServeHTTP(w, r.WithContext(ctx))
@@ -50,6 +52,10 @@ func JWT(manager service.TokenManagerInterface) func(http.Handler) http.Handler 
 }
 
 func UserIDFromContext(ctx context.Context) (int64, bool) {
-	userID, ok := ctx.Value(UserIDKey).(int64)
+	userID, ok := ctx.Value(userIDKey).(int64)
 	return userID, ok
+}
+
+func NewContextWithUserID(ctx context.Context, userID int64) context.Context {
+	return context.WithValue(ctx, userIDKey, userID)
 }

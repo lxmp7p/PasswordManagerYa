@@ -119,7 +119,7 @@ func (vi *VaultService) Create(ctx context.Context, userID int64, item VaultCrea
 
 	err = vi.vaultRepo.CreateMetadata(ctx, newItemId, item.Metadata)
 
-	return newItemId, nil
+	return newItemId, err
 }
 
 func (lp *LoginPasswordData) validate() error {

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -39,7 +40,7 @@ func TestLoginSuccess(t *testing.T) {
 		},
 	}
 
-	handler := NewAuthHandler(mockService)
+	handler := NewAuthHandler(slog.Default(), mockService)
 
 	reqBody := RegisterRequest{
 		Login:    "testuser",
@@ -69,7 +70,7 @@ func TestLoginSuccess(t *testing.T) {
 
 func TestLoginInvalidJSON(t *testing.T) {
 	mockService := &MockAuthService{}
-	handler := NewAuthHandler(mockService)
+	handler := NewAuthHandler(slog.Default(), mockService)
 
 	req := httptest.NewRequest("POST", "/auth/login", bytes.NewReader([]byte("invalid json")))
 	w := httptest.NewRecorder()
@@ -92,7 +93,7 @@ func TestLoginServiceError(t *testing.T) {
 		},
 	}
 
-	handler := NewAuthHandler(mockService)
+	handler := NewAuthHandler(slog.Default(), mockService)
 
 	reqBody := RegisterRequest{
 		Login:    "wronguser",
@@ -124,7 +125,7 @@ func TestLoginEmptyCredentials(t *testing.T) {
 		},
 	}
 
-	handler := NewAuthHandler(mockService)
+	handler := NewAuthHandler(slog.Default(), mockService)
 
 	tests := []struct {
 		name     string
@@ -163,7 +164,7 @@ func TestLoginResponseContentType(t *testing.T) {
 		},
 	}
 
-	handler := NewAuthHandler(mockService)
+	handler := NewAuthHandler(slog.Default(), mockService)
 
 	reqBody := RegisterRequest{
 		Login:    "user",
@@ -194,7 +195,7 @@ func TestRegisterSuccess(t *testing.T) {
 		},
 	}
 
-	handler := NewAuthHandler(mockService)
+	handler := NewAuthHandler(slog.Default(), mockService)
 
 	reqBody := RegisterRequest{
 		Login:    "newuser",
@@ -218,7 +219,7 @@ func TestRegisterSuccess(t *testing.T) {
 
 func TestRegisterInvalidJSON(t *testing.T) {
 	mockService := &MockAuthService{}
-	handler := NewAuthHandler(mockService)
+	handler := NewAuthHandler(slog.Default(), mockService)
 
 	req := httptest.NewRequest("POST", "/auth/register", bytes.NewReader([]byte("{invalid}")))
 	w := httptest.NewRecorder()
@@ -241,7 +242,7 @@ func TestRegisterServiceError(t *testing.T) {
 		},
 	}
 
-	handler := NewAuthHandler(mockService)
+	handler := NewAuthHandler(slog.Default(), mockService)
 
 	reqBody := RegisterRequest{
 		Login:    "existinguser",
@@ -257,10 +258,6 @@ func TestRegisterServiceError(t *testing.T) {
 	if w.Code != http.StatusInternalServerError {
 		t.Errorf("expected status %d, got %d", http.StatusInternalServerError, w.Code)
 	}
-
-	if !contains(w.Body.String(), "login already exists") {
-		t.Errorf("expected error message, got %q", w.Body.String())
-	}
 }
 
 func TestRegisterEmptyCredentials(t *testing.T) {
@@ -273,7 +270,7 @@ func TestRegisterEmptyCredentials(t *testing.T) {
 		},
 	}
 
-	handler := NewAuthHandler(mockService)
+	handler := NewAuthHandler(slog.Default(), mockService)
 
 	tests := []struct {
 		name     string
@@ -307,7 +304,7 @@ func TestRegisterEmptyCredentials(t *testing.T) {
 
 func TestRegisterNoBody(t *testing.T) {
 	mockService := &MockAuthService{}
-	handler := NewAuthHandler(mockService)
+	handler := NewAuthHandler(slog.Default(), mockService)
 
 	req := httptest.NewRequest("POST", "/auth/register", bytes.NewReader([]byte("")))
 	w := httptest.NewRecorder()
@@ -321,7 +318,7 @@ func TestRegisterNoBody(t *testing.T) {
 
 func TestLoginNoBody(t *testing.T) {
 	mockService := &MockAuthService{}
-	handler := NewAuthHandler(mockService)
+	handler := NewAuthHandler(slog.Default(), mockService)
 
 	req := httptest.NewRequest("POST", "/auth/login", bytes.NewReader([]byte("")))
 	w := httptest.NewRecorder()
@@ -343,7 +340,7 @@ func TestLoginLargeCredentials(t *testing.T) {
 		},
 	}
 
-	handler := NewAuthHandler(mockService)
+	handler := NewAuthHandler(slog.Default(), mockService)
 
 	reqBody := RegisterRequest{
 		Login:    largeLogin,
@@ -374,7 +371,7 @@ func TestRegisterMultipleUsers(t *testing.T) {
 		},
 	}
 
-	handler := NewAuthHandler(mockService)
+	handler := NewAuthHandler(slog.Default(), mockService)
 
 	users := []string{"user1", "user2", "user3"}
 
@@ -421,7 +418,7 @@ func TestLoginMultipleAttempts(t *testing.T) {
 		},
 	}
 
-	handler := NewAuthHandler(mockService)
+	handler := NewAuthHandler(slog.Default(), mockService)
 
 	attempts := []struct {
 		login    string
@@ -458,7 +455,7 @@ func TestLoginMultipleAttempts(t *testing.T) {
 
 func TestNewAuthHandler(t *testing.T) {
 	mockService := &MockAuthService{}
-	handler := NewAuthHandler(mockService)
+	handler := NewAuthHandler(slog.Default(), mockService)
 
 	if handler == nil {
 		t.Error("expected handler to be created")
@@ -476,7 +473,7 @@ func TestRegisterResponseStatus(t *testing.T) {
 		},
 	}
 
-	handler := NewAuthHandler(mockService)
+	handler := NewAuthHandler(slog.Default(), mockService)
 
 	reqBody := RegisterRequest{
 		Login:    "user",
@@ -508,7 +505,7 @@ func TestLoginContextUsage(t *testing.T) {
 		},
 	}
 
-	handler := NewAuthHandler(mockService)
+	handler := NewAuthHandler(slog.Default(), mockService)
 
 	reqBody := RegisterRequest{
 		Login:    "user",

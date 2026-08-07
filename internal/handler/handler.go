@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log/slog"
 	"passwordmanager/internal/service"
 
 	"github.com/go-chi/chi/v5"
@@ -12,12 +13,13 @@ type Handler struct {
 }
 
 func NewHandler(
+	logger *slog.Logger,
 	authService service.AuthServiceInterface,
 	vaultService service.VaultServiceInterface,
 	tokenService service.TokenManagerInterface) *Handler {
 	return &Handler{
-		auth:  NewAuthHandler(authService),
-		vault: NewVaultHandler(vaultService, tokenService),
+		auth:  NewAuthHandler(logger, authService),
+		vault: NewVaultHandler(logger, vaultService, tokenService),
 	}
 }
 
