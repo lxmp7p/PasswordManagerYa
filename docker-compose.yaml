@@ -1,0 +1,45 @@
+services:
+
+  postgres:
+    image: postgres:16
+    container_name: passwordmanager-db
+
+    env_file:
+      - config.env
+
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: testpass
+      POSTGRES_DB: passwordmanager
+
+    ports:
+      - "5433:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d passwordmanager"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+
+  server:
+    build: .
+
+    container_name: passwordmanager-server
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    env_file:
+      - config.env
+
+    ports:
+      - "443:443"
+
+
+volumes:
+  postgres_data:
