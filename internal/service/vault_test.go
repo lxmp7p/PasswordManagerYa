@@ -17,6 +17,30 @@ type MockVaultRepository struct {
 	mock.Mock
 }
 
+type MockCryptoService struct {
+	mock.Mock
+}
+
+func (m *MockCryptoService) Encrypt(data []byte) ([]byte, error) {
+	args := m.Called(data)
+
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).([]byte), args.Error(1)
+}
+
+func (m *MockCryptoService) Decrypt(data []byte) ([]byte, error) {
+	args := m.Called(data)
+
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).([]byte), args.Error(1)
+}
+
 func newTestCryptoService(t *testing.T) CryptoServiceInterface {
 	crypto, err := NewCryptoService(
 		"01234567890123456789012345678901",

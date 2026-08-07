@@ -8,8 +8,6 @@ import (
 	"passwordmanager/internal/dto"
 	"passwordmanager/internal/model"
 	"passwordmanager/internal/repository"
-
-	"github.com/stretchr/testify/mock"
 )
 
 type VaultCreate struct {
@@ -166,7 +164,7 @@ func (vi *VaultService) Get(ctx context.Context, itemID, userID int64) (dto.Vaul
 		return dto.VaultResponseGet{}, err
 	}
 
-	decrypted, err := vi.crypto.Encrypt(vault.SecretData)
+	decrypted, err := vi.crypto.Decrypt(vault.SecretData)
 	if err != nil {
 		return dto.VaultResponseGet{}, err
 	}
@@ -214,28 +212,4 @@ func (vi *VaultService) List(ctx context.Context, userID int64) ([]dto.VaultResp
 	}
 
 	return result, nil
-}
-
-type MockCryptoService struct {
-	mock.Mock
-}
-
-func (m *MockCryptoService) Encrypt(data []byte) ([]byte, error) {
-	args := m.Called(data)
-
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-
-	return args.Get(0).([]byte), args.Error(1)
-}
-
-func (m *MockCryptoService) Decrypt(data []byte) ([]byte, error) {
-	args := m.Called(data)
-
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-
-	return args.Get(0).([]byte), args.Error(1)
 }
