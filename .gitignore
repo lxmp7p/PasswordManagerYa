@@ -3,3 +3,4 @@ config.env
 *crt
 *key
 coverage.out
+./vscode
